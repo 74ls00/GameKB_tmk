@@ -95,7 +95,7 @@ Note that ***higher layers have priority in the layer stack***. The firmware sta
 
 
 ### 0.3 Keymap Example
-The keymap is defined in the **`uint8_t keymaps[]`** array, a 2-dimensional array of rows and columns corresponding to positions in the keyboard matrix. But most often the layers are defined using C macros to allow for easier reading and editing of the keymap files. To use complex actions you need to define `Fn` action in the **`action_t fn_actions[]`** array.
+The keymap is defined in the **`keymaps[]`** array, a 2-dimensional array of rows and columns corresponding to positions in the keyboard matrix. But most often the layers are defined using C macros to allow for easier reading and editing of the keymap files. To use complex actions you need to define `Fn` keycodes in the **`fn_actions[]`** array.
 
 This is a keymap example for the [HHKB](http://en.wikipedia.org/wiki/Happy_Hacking_Keyboard) keyboard.
 This example has three layers: the QWERTY base layer, and two overlay layers for cursor and mousekey control, respectively.
@@ -109,7 +109,7 @@ In this example,
 
 You can find other keymap definitions in file `keymap.c` located on project directories.
 
-    const uint8_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
+    static const uint8_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         /* 0: Qwerty
          * ,-----------------------------------------------------------.
          * |Esc|  1|  2|  3|  4|  5|  6|  7|  8|  9|  0|  -|  =|  \|  `|
@@ -167,7 +167,7 @@ You can find other keymap definitions in file `keymap.c` located on project dire
                     LGUI,LALT,          BTN1,               RALT,TRNS),
     };
 
-    const action_t PROGMEM fn_actions[] = {
+    static const uint16_t PROGMEM fn_actions[] = {
         ACTION_LAYER_MOMENTARY(1),                  // FN0
         ACTION_LAYER_TAP_KEY(2, KC_SCLN),           // FN1
         ACTION_LAYER_TOGGLE(2),                     // FN2
@@ -214,7 +214,7 @@ There are 8 modifiers which has discrimination between left and right.
 - `KC_WSCH`, `KC_WHOM`, `KC_WBAK`, `KC_WFWD`, `KC_WSTP`, `KC_WREF`, `KC_WFAV` for web browser operation
 
 ### 1.5 Fn key
-`KC_FNnn` are keycodes for `Fn` key which not given any actions at the beginning unlike most of keycodes has its own inborn action. To use these keycodes in `KEYMAP()` you need to assign action you want at first. Action of `Fn` key is defined in `action_t fn_actions[]` and its index of the array is identical with number part of `KC_FNnn`. Thus `KC_FN0` keycode indicates the action defined in first element of the array. ***32 `Fn` keys can be defined at most.***
+`KC_FNnn` are keycodes for `Fn` key which not given any actions at the beginning unlike most of keycodes has its own inborn action. To use these keycodes in `KEYMAP()` you need to assign action you want at first. Action of `Fn` key is defined in `fn_actions[]` and its index of the array is identical with number part of `KC_FNnn`. Thus `KC_FN0` keycode indicates the action defined in first element of the array. ***32 `Fn` keys can be defined at most.***
 
 ### 1.6 Keycode Table
  See keycode table in [`doc/keycode.txt`](./keycode.txt) for description of keycodes.
@@ -379,33 +379,19 @@ Default Layer also has bitwise operations, they are executed when key is release
     ACTION_DEFAULT_LAYER_BIT_SET(part, bits)
 
 
+
 ### 2.3 Macro action
-`Macro` actions allow you to register a complex sequence of keystrokes when a key is pressed, where macros are simple sequences of keypresses.
+***TBD***
 
-    ACTION_MACRO(id)
-    ACTION_MACRO_TAP(id)
+`Macro` action indicates complex key strokes.
+ 
+    MACRO( D(LSHIFT), D(D), END )
+    MACRO( U(D), U(LSHIFT), END )
+    MACRO( I(255), T(H), T(E), T(L), T(L), W(255), T(O), END )
 
-`id` is an 8-bit user-defined value the macro getter function can use to pick the specific macro.
-
-
-#### 2.3.1 Implementing Macro getter function
-To implement `macro` functions, the macro lookup list must be implemented: 
-
-    const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt);
-
-The function must always return a valid macro, and default implementation of `action_get_macro` always returns `MACRO_NONE` which has no effect.
-  
-#### 2.3.1.1 Limitations
-Similar to the Function Action system, the selector functions is passed  a `keyrecord_t` object, so it can inspect the key state (e.g. different macros on key press or release), and key itself.
-  
-Unlike the Function Action system,`macros` are pre-recorded key sequences, so you can only select from a list. If you want to use dynamic macros then you should look at the more complex function action system. 
-
-#### 2.3.2 Implementing/Defining Macro sequences
-Macros are of the form (must be wrapped by the `MACRO` function, and end with an `END` mark)
-
-    MACRO( ..., END )
-    
-Within each macro, the following commands can be used:
+#### 2.3.1 Macro Commands
+- **MACRO()**
+- **MACRO_NONE**
 
 - **I()**   change interval of stroke.
 - **D()**   press key
@@ -415,25 +401,19 @@ Within each macro, the following commands can be used:
 - **SM()**  store modifier state
 - **RM()**  restore modifier state
 - **CM()**  clear modifier state
-
-e.g.:
-
-    MACRO( D(LSHIFT), D(D), END )  // hold down LSHIFT and D - will print 'D'  
-    MACRO( U(D), U(LSHIFT), END )  // release U and LSHIFT keys (an event.pressed == False counterpart for the one above)
-    MACRO( I(255), T(H), T(E), T(L), T(L), W(255), T(O), END ) // slowly print out h-e-l-l---o
+- **END**   end mark
 
 #### 2.3.2 Examples
-
-in keymap.c, define `action_get_macro`
+***TBD***
 
     const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
     {
         switch (id) {
-            case 0:
+            case HELLO:
                 return (record->event.pressed ?
                         MACRO( I(0), T(H), T(E), T(L), T(L), W(255), T(O), END ) :
                         MACRO_NONE );
-            case 1:
+            case ALT_TAB:
                 return (record->event.pressed ?
                         MACRO( D(LALT), D(TAB), END ) :
                         MACRO( U(TAB), END ));
@@ -441,12 +421,7 @@ in keymap.c, define `action_get_macro`
         return MACRO_NONE;
     }
 
-in keymap.c, bind items in `fn_actions` to the macro function
-  
-    const action_t PROGMEM fn_actions[] = {
-         [0] = ACTION_MACRO(0), // will print 'hello' for example
-         [1] = ACTION_MACRO(1),
-    };
+
 
 
 ### 2.4 Function action
@@ -468,7 +443,7 @@ To define tappable `Function` action in keymap use this.
 #### 2.4.3 Implement user function
 `Function` actions can be defined freely with C by user in callback function:
 
-    void action_function(keyrecord_t *record, uint8_t id, uint8_t opt);
+    void keymap_call_function(keyrecord_t *event, uint8_t id, uint8_t opt)
 
 This C function is called every time key is operated, argument `id` selects action to be performed and `opt` can be used for option. Function `id` can be 0-255 and `opt` can be 0-15.
 
@@ -569,7 +544,6 @@ This registers modifier key(s) simultaneously with layer switching.
 
     ACTION_LAYER_MODS(2, MOD_LSFT | MOD_LALT)
 
-You can combine four modifiers at most but cannot use both left and right modifiers at a time, either left or right modiiers only can be allowed.
 
 
 ## 4. Tapping
@@ -624,13 +598,13 @@ Legacy Keymap uses two arrays `fn_layer[]` and `fn_keycode[]` to define Fn key. 
 
 In following setting example, `Fn0`, `Fn1` and `Fn2` switch layer to 1, 2 and 2 respectively. `Fn2` registers `Space` key when tapping while `Fn0` and `Fn1` doesn't send any key.
 
-    const uint8_t PROGMEM fn_layer[] = {
+    static const uint8_t PROGMEM fn_layer[] = {
         1,              // Fn0
         2,              // Fn1
         2,              // Fn2
     };
 
-    const uint8_t PROGMEM fn_keycode[] = {
+    static const uint8_t PROGMEM fn_keycode[] = {
         KC_NO,          // Fn0
         KC_NO,          // Fn1
         KC_SPC,         // Fn2
